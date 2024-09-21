@@ -1,26 +1,19 @@
 'use client';
 import React from 'react';
+import { Share } from './share-button';
+import Menu from './menu';
 import { useQuill } from 'react-quilljs';
-import 'quill/dist/quill.snow.css'; // Import Quill styles
+import 'quill/dist/quill.snow.css'; 
 import Quill from 'quill';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFolderOpen, faSave, faUsers } from '@fortawesome/free-solid-svg-icons';
-import mammoth from 'mammoth'; // Import mammoth
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { saveAs } from 'file-saver';
-import htmlDocx from 'html-docx-js/dist/html-docx';
-import { PDFDocument } from 'pdf-lib';
 
 
 export default function Editor() {
     const fontSizeArr = ['8px', '9px', '10px', '12px', '14px', '16px', '20px', '24px', '32px', '42px', '54px', '68px', '84px', '98px'];
 
     const modules = {
-        toolbar: '#toolbar', // Link the toolbar to this ID
+        toolbar: '#toolbar', 
     };
 
-    // Register custom font sizes
     const Size = Quill.import('attributors/style/size');
     Size.whitelist = fontSizeArr;
     Quill.register(Size, true);
@@ -30,230 +23,169 @@ export default function Editor() {
         modules,
     });
 
-    const [isOpen, setIsOpen] = React.useState(false);
-    const [isSaveAsOpen, setIsSaveAsOpen] = React.useState(false);
+    const [zoomLevel, setZoomLevel] = React.useState(100);
 
-    const toggleDropdown = () => {
-        setIsOpen(!isOpen);
-        setIsSaveAsOpen(false); // Close Save As menu when opening main menu
+    const [isSliderVisible, setIsSliderVisible] = React.useState(false); // Slider visibility state
+
+
+    const handleZoomChange = (event) => {
+        const value = parseFloat(event.target.value);
+        setZoomLevel(value);
     };
 
-    const toggleSaveAsDropdown = () => {
-        setIsSaveAsOpen(!isSaveAsOpen);
+    const handleToggleSlider = () => {
+        setIsSliderVisible((prev) => !prev); // Toggle slider visibility
     };
 
-    const handleFileInput = (event) => {
-        const file = event.target.files[0];
-        if (file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const arrayBuffer = e.target.result;
-                    const result = await mammoth.convertToHtml({ arrayBuffer });
-                    quill.root.innerHTML = result.value; // Set the HTML content to Quill editor
-                } catch (error) {
-                    console.error('Error reading .docx file:', error);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        } else {
-            alert('Please select a valid .docx file.');
+    // Apply zoom effect when zoom level changes
+    React.useEffect(() => {
+        if (quill) {
+            const editorContent = quill.root;
+            const scale = zoomLevel / 100; // Convert percentage to scale factor
+            editorContent.style.transform = `scale(${scale})`;
+            editorContent.style.transformOrigin = 'top left';
         }
-    };
+    }, [zoomLevel, quill]);
 
-    const handleOpenClick = () => {
-       document.getElementById('file-input').click();
-    };
-
-
-    
-    const exportToDocx = () => {
-        const htmlContent = quill.root.innerHTML; // Get HTML content from Quill editor
-
-        // Convert HTML to DOCX Blob
-        const docxBlob = htmlDocx.asBlob(htmlContent);
-
-        // Save as file
-        saveAs(docxBlob, 'document.docx');
-    };
+    const dynamicWidth = 800 * (zoomLevel / 100);
+    const dynamicHeight = 1000 * (zoomLevel / 100);
 
 
-    
-    const exportToPdf = async () => {
-        // Convert HTML content to canvas
-        const canvas = await html2canvas(quill.root);
-        const imgData = canvas.toDataURL('image/png');
-    
-        // Create a PDF document
-        const pdfDoc = await PDFDocument.create();
-        const page = pdfDoc.addPage([canvas.width, canvas.height]);
-    
-        // Draw the image onto the PDF page
-        const jpgImage = await pdfDoc.embedPng(imgData);
-        page.drawImage(jpgImage, {
-            x: 0,
-            y: 0,
-            width: canvas.width,
-            height: canvas.height,
-        });
-    
-        // Save the PDF
-        const pdfBytes = await pdfDoc.save();
-        saveAs(new Blob([pdfBytes]), 'document.pdf');
-    };
-    
-
-    const handleSaveClick = (format) => {
-        if (format === 'docx') {
-            exportToDocx();
-        } else if (format === 'pdf') {
-            exportToPdf();
-        }
-        setIsSaveAsOpen(false); // Close Save As menu after saving
-    };
 
     return (
-        <div id="mainTool" className=" w-full h-screen flex flex-col items-center justify-center mt-8">
-            {/* Dropdown Button and Menu */}
-            <button
-                    
-                    className="absolute top-8 right-20 w-[80px] h-[40px] bg-green-800 shadow-lg border-2 border-green-800 rounded-lg flex items-center justify-center"
-                    
+        <div className="w-full h-screen flex flex-col items-center justify-center mt-8">
+            <div id="mainTool" className="sm:h-1/8 h-1/8 flex flex-wrap items-center justify-center mb-8" >
+                <Share />
+                <Menu quill={quill} />
+
+                <div
+                    id="toolbar"
+                    className="absolute top-8 sm:w-[800px] bg-white shadow-lg rounded-lg flex flex-wrap items-center justify-center"
                 >
-                 +  Share
-                </button>   
-            <div id="menu" className="w-full flex ">
-                <button
+                
+                     <button
+                        onClick={handleToggleSlider}
+                        className="bg-blue-500 text-black mr-5 rounded relative mb-2"
+                    >
+                        {zoomLevel}%
+                    </button>
+
                     
-                    className="absolute left-20 w-[60px] h-[50px] bg-gray-50 shadow-lg border-2 border-gray-300 rounded-lg flex items-center justify-center z-20"
-                    onClick={toggleDropdown}
-                >
-                    <div className="space-y-1">
-                        <span className="block w-4 h-0.5 bg-black"></span>
-                        <span className="block w-4 h-0.5 bg-black"></span>
-                        <span className="block w-4 h-0.5 bg-black"></span>
+                    {/* Dropdown Slider */}
+                    {isSliderVisible && (
+                        <div className="mb-4 ml-10 absolute left-10 mt-20  z-10">
+                            <input
+                                type="range"
+                                min="10"
+                                max="300"
+                                step="10"
+                                value={zoomLevel}
+                                onChange={handleZoomChange}
+                                className="slider w-[150px] h-1 bg-gray-200 rounded-lg cursor-pointer accent-green-800"
+                            />
+                            {/* <span className="block mt-2 text-center">{zoomLevel}%</span> */}
+                        </div>
+                    )}
+
+                <select className="ql-header">
+                    <option value="">Normal</option>
+                    <option value="1">Heading 1</option>
+                    <option value="2">Heading 2</option>
+                    <option value="3">Heading 3</option>
+                    <option value="4">Heading 4</option>
+                    <option value="5">Heading 5</option>
+                    <option value="6">Heading 6</option>
+                </select>
+
+
+                    <select className="ql-font">
+                        <option value="sans-serif" selected>Sans Serif</option>
+                        <option value="serif">Serif</option>
+                        <option value="monospace">Monospace</option>
+                        {/* Add custom fonts */}
+                        <option value="times-new-roman">Times New Roman</option>
+                        <option value="arial">Arial</option>
+                        <option value="courier-new">Courier New</option>
+                    </select>
+
+                
+                    <button className="ql-bold"></button>
+                    <button className="ql-italic"></button>
+                    <button className="ql-underline"></button>
+
+                    <button className="ql-list" value="ordered"></button>
+                    <button className="ql-list" value="bullet"></button>
+                    <select className="ql-align text-black">
+                        <option></option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                        <option value="justify">Justify</option>
+                    </select>
+                    <button className="ql-link"></button>
+                    <button className="ql-image"></button>
+                    <button className="ql-video"></button>
+
+                    <select className="ql-color">
+                        <option value="#000000">Black</option>
+                        <option value="#FF0000">Red</option>
+                        <option value="#00FF00">Green</option>
+                        <option value="#0000FF">Blue</option>
+                        <option value="#FFFF00">Yellow</option>
+                        <option value="#FF00FF">Magenta</option>
+                        <option value="#00FFFF">Cyan</option>
+                        <option value="#808080">Gray</option>
+                        <option value="#800000">Maroon</option>
+                        <option value="#008000">Dark Green</option>
+                        <option value="#000080">Navy</option>
+                        <option value="#808000">Olive</option>
+                        <option value="#800080">Purple</option>
+                        <option value="#008080">Teal</option>
+                        <option value="#C0C0C0">Silver</option>
+                        <option value="#FFFFFF">White</option>
+                    </select>
+
+                    <div >
+                        <select className="ql-size">
+                            {fontSizeArr.map(size => (
+                                <option key={size} value={size}>{size}</option>
+                            ))}
+                        </select>
                     </div>
-                </button>
 
-                {isOpen && (
-                    <div className="absolute left-20 top-14 w-[200px] bg-white shadow-lg border border-gray-300 rounded-lg z-30 text-black text-sm">
-                        <ul className="py-2">
-                            <li
-                                id="open"
-                                className="px-4 py-2 flex items-center hover:bg-green-100 cursor-pointer"
-                                onClick={handleOpenClick}
-                            >
-                                <FontAwesomeIcon icon={faFolderOpen} className="mr-2" />
-                                Open
-                            </li>
-                            <li
-                                id="save"
-                                className="px-4 py-2 flex items-center hover:bg-green-100 cursor-pointer"
-                                onClick={toggleSaveAsDropdown}
-                            >
-                                <FontAwesomeIcon icon={faSave} className="mr-2" />
-                                Save As
-                                <ul className={`py-1 mt-2 ${isSaveAsOpen ? 'block' : 'hidden'} bg-gray-50 border border-gray-300 rounded-lg`}>
-                                    <li
-                                        className="px-4 py-2 hover:bg-green-100 cursor-pointer"
-                                        onClick={() => handleSaveClick('docx')}
-                                    >
-                                        Save as DOCX
-                                    </li>
-                                    <li
-                                        className="px-4 py-2 hover:bg-green-100 cursor-pointer"
-                                        onClick={() => handleSaveClick('pdf')}
-                                    >
-                                        Save as PDF
-                                    </li>
-                                </ul>
-                            </li>
-                            <li
-                                id="collaborate"
-                                className="px-4 py-2 flex items-center hover:bg-green-100 cursor-pointer"
-                            >
-                                <FontAwesomeIcon icon={faUsers} className="mr-2" />
-                                Live Collaboration
-                            </li>
-                        </ul>
-                    </div>
-                )}
-            </div>
-
-            {/* Hidden File Input */}
-            <input
-                id="file-input"
-                type="file"
-                className="hidden"
-                onChange={handleFileInput}
-            />
-
-            {/* Toolbar */}
-            <div
-                id="toolbar"
-                className="w-[800px] bg-gray-100 shadow-lg rounded-lg flex items-center justify-center "
-            >
-                <select className="ql-font">
-                    <option value="sans-serif" selected>Sans Serif</option>
-                    <option value="serif">Serif</option>
-                    <option value="monospace">Monospace</option>
-                    {/* Add custom fonts */}
-                    <option value="times-new-roman">Times New Roman</option>
-                    <option value="arial">Arial</option>
-                    <option value="courier-new">Courier New</option>
-                </select>
-
-                <button className="ql-bold"></button>
-                <button className="ql-italic"></button>
-                <button className="ql-underline"></button>
-
-                <button className="ql-list" value="ordered"></button>
-                <button className="ql-list" value="bullet"></button>
-                <select className="ql-align text-black">
-                    <option></option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                    <option value="justify">Justify</option>
-                </select>
-                <button className="ql-link"></button>
-                <button className="ql-image"></button>
-                <button className="ql-video"></button>
-
-                <select className="ql-color">
-                    <option value="#000000">Black</option>
-                    <option value="#FF0000">Red</option>
-                    <option value="#00FF00">Green</option>
-                    <option value="#0000FF">Blue</option>
-                    <option value="#FFFF00">Yellow</option>
-                    <option value="#FF00FF">Magenta</option>
-                    <option value="#00FFFF">Cyan</option>
-                    <option value="#808080">Gray</option>
-                    <option value="#800000">Maroon</option>
-                    <option value="#008000">Dark Green</option>
-                    <option value="#000080">Navy</option>
-                    <option value="#808000">Olive</option>
-                    <option value="#800080">Purple</option>
-                    <option value="#008080">Teal</option>
-                    <option value="#C0C0C0">Silver</option>
-                    <option value="#FFFFFF">White</option>
-                </select>
-
-                <select className="ql-size">
-                    {fontSizeArr.map(size => (
-                        <option key={size} value={size}>{size}</option>
-                    ))}
-                </select>
-            </div>
-
+                   
+                </div>
+                <div className="h-10"></div>
             
-                    
-            <div className="h-[10px]"></div>
+                
+            </div>
 
-            {/* Quill Editor */}
-            <div
-                ref={quillRef}
-                className="m-8 w-[800px] h-[300px] border-2 border-gray-600 bg-white text-black"
-            ></div>
+          
+           
+                <div
+                    id="editor-div"
+                    className="relative p-20 bg-white text-black overflow-scroll"
+                    ref={quillRef}
+                    style={{
+                        maxWidth: '100%', // Responsive width, adjusts with the screen
+                        width: `${dynamicWidth}px`,
+                        height: `${dynamicHeight}px`,
+                        marginLeft: 'auto', // Center the editor
+                        marginRight: 'auto', // Center the editor
+                    }}
+                ></div>
+            
+
+                {/* <div id="editor-div " className="m-10 sm:h-6/8 h-6/8 h-[800px] shadow-lg bg-white text-black overflow-scroll "
+                    ref={quillRef}
+                    style={{
+                        width: `${dynamicWidth}px`,
+                        height: `${dynamicHeight}px`,
+                        
+                    }}
+                   
+                    
+                ></div> */}
+            
         </div>
     );
 }
