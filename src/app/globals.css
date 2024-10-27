@@ -9,7 +9,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #f1f1f1;
+    --background: #f7f7f7;
     --foreground: #000000;
   }
 }
@@ -25,3 +25,204 @@ body {
     text-wrap: balance;
   }
 }
+
+#menu {
+  display: block;
+}
+#share {
+  display: block;
+}
+#toolbar {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Media query for screen width 1050px or less */
+@media (max-width: 1050px) {
+  
+  #share {
+    display: none;
+  }
+
+  #toolbar {
+    left: 0;
+    width: 700px;
+    margin-left: auto;
+    margin-right: 0;
+    border: 1px solid #d1d5db; 
+    border-radius: 1rem; 
+  }
+
+  #editor-div {
+    margin-bottom: 4px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+ 
+  #mainTool {
+    width: 800px;
+   margin-bottom: 6px;
+   /* justify-items: center; */
+    justify-content: space-between;
+   display: flex;
+  }
+
+  #menu {
+    margin-left: 0;
+  }
+  #menu-button {
+    position: relative;
+    /* margin-top: 5px; */
+  
+    
+    padding: 4px;
+    margin-left: 0;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db; 
+    border-radius: 1rem; 
+    
+    
+    
+  }
+
+
+
+ 
+
+  footer {
+
+
+    display: none; 
+    justify-content: center; /* Center align the content */
+    align-items: center; /* Center align the content vertically */
+    
+    background-color: #ffffff; /* Footer background color */
+    width: 700px; /* Full width */
+    height: 52px;
+    position: fixed; /* Fix the footer at the bottom */
+    bottom: 20px; /* Position at the bottom */
+    z-index: 1000; /* Ensure footer is above other content */
+    border: 1.2px solid #dbd6d6; /* Black border with 2px thickness */
+    border-radius: 10px;
+    /*   bg-white */
+  }
+
+  #share-button-inside {
+    height: 40px;
+  } 
+
+} 
+
+@media (max-width: 800px) {
+  #wrap-extra-icon {
+    display: block;
+  }
+
+  #extra-icons-menu {
+    display: none;
+  }
+  #mainTool {
+    width: 700px;
+   margin-bottom: 6px;
+   /* justify-items: center; */
+    justify-content: space-between;
+   display: flex;
+  }
+
+  #toolbar {
+    width: 620px;
+    
+
+  }
+
+  #editor-div {
+    max-width: 600px;
+  }
+
+  footer {
+    display: none;
+    width: 600px;
+  } 
+}
+
+@media (max-width: 700px) {
+  #mainTool {
+    width: 600px;
+   margin-bottom: 6px;
+   /* justify-items: center; */
+    justify-content: space-between;
+   display: flex;
+  }
+  #toolbar {
+    width: 520px;
+    
+
+  }
+
+  footer {
+    display: none;
+    width: 450px;
+  }
+
+  
+}
+
+
+@media (max-width: 640px) {
+  #mainTool {
+    width: 400px;
+    margin-bottom: 6px;
+    justify-content: space-evenly; /* Evenly distribute space between items */
+    display: flex; /* Enable flex layout */
+    flex-direction: row; /* Set flex direction to row */
+    align-items: center; /* Center items vertically within the container */
+  }
+  
+  #toolbar {
+    width: 320px;
+    margin-left: 0;
+    height: 50px;
+    padding: 0;
+    flex-wrap: wrap; /* Allow wrapping if necessary */
+  }
+
+  #menu {
+    margin: 0;
+    padding: 0;
+    width: 50px; /* Adjust this value as necessary */
+    height: auto;
+  }
+
+  footer {
+    display: block; /* Hide footer on small screens */
+    width: 380px; /* Optional: Adjust the width if needed */
+  }
+
+  #toolbar-header-font {
+    display: none;
+  }
+
+  #editor-div {
+    margin-left: 10px;
+    margin-right: 2px;
+  }
+  
+}
+
+
+
+
+
+
+@media (min-width: 800px) {
+  footer {
+    display: none;
+  }
+  #extra-dropdown {
+    display: none;
+  }
+}
+
+
+

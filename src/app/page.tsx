@@ -1,17 +1,24 @@
-import Editor from "@/components/editor";
-import Navbar from "@/components/navbar";
-import Menu from "@/components/menu";
-export default function Home() {
-  return (
-    
-   
-    <div>
-      {/* <Navbar /> */}
-      <div className="flex items-center justify-center">
-    
-      <Editor />
-      </div>
+// app/page.tsx
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation'; 
+import { v4 as uuidV4 } from 'uuid';
 
-    </div>
-     );
+export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const currentUrl = window.location.pathname;
+    const regex = /\/documents\/([a-f0-9\-]{36})/;
+    const match = currentUrl.match(regex);
+
+    if (!match) {
+      // Redirect to a new document ID
+      const newDocId = uuidV4();
+      console.log(`Redirecting to /documents/${newDocId}`);
+      router.push(`/documents/${newDocId}`);
+    }
+  }, [router]);
+
+  return <div>Loading in page...</div>;  // Show loading while redirecting
 }

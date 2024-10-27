@@ -5,6 +5,7 @@ import { faFolderOpen, faSave, faUsers } from '@fortawesome/free-solid-svg-icons
 import mammoth from 'mammoth'; 
 import jsPDF from 'jspdf';
 import Quill from 'quill';
+import { FaBars } from "react-icons/fa";
 
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
@@ -19,6 +20,7 @@ export function Menu({ quill }) {
 
 
     const toggleDropdown = () => {
+        console.log("dropdown clicked");
         setIsOpen(!isOpen);
         setIsSaveAsOpen(false);
     };
@@ -96,21 +98,19 @@ export function Menu({ quill }) {
 
   return (
     <div>
-       <div id="menu" className="absolute top-8 left-20 w-full flex ">
-                <button
+       <div id="menu-div" className=" flex ">
+                <button id="menu-button"
                     
-                    className="relative w-[60px] h-[50px] bg-gray-50 shadow-lg border-2 border-gray-300 rounded-lg flex items-center justify-center z-20"
+                    className="relative w-[60px] h-[50px]  bg-white border-[1.5px] border-gray-300 rounded-xl flex items-center justify-center z-20"
                     onClick={toggleDropdown}
                 >
-                    <div className="space-y-1">
-                        <span className="block w-4 h-0.5 bg-black"></span>
-                        <span className="block w-4 h-0.5 bg-black"></span>
-                        <span className="block w-4 h-0.5 bg-black"></span>
-                    </div>
+                    <FaBars className="text-gray-600"/>  
                 </button>
 
                 {isOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-[200px] bg-white shadow-lg border border-gray-300 rounded-lg z-30 text-black text-sm">
+                    <div id="menu-dropdown"
+                    className="absolute top-[80px]  mt-1 w-[200px] bg-white shadow-lg border border-gray-300 rounded-lg z-30 text-black text-sm">
+                       
                         <ul className="py-2">
                             <li
                                 id="open"

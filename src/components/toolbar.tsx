@@ -21,8 +21,7 @@ export default function Toolbar({quill}) {
         }
     }, [zoomLevel, quill]);
 
-    const dynamicWidth = 800 * (zoomLevel / 100);
-    const dynamicHeight = 1000 * (zoomLevel / 100);
+   
 
     const handleZoomChange = (event) => {
         const value = parseFloat(event.target.value);
@@ -37,6 +36,8 @@ export default function Toolbar({quill}) {
     <div
     id="toolbar"
     className="absolute top-8 sm:w-[800px] bg-white shadow-lg rounded-lg flex flex-wrap items-center justify-center"
+style={{ border: "none" }}
+
 >
      
      <button
