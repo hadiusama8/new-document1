@@ -7,6 +7,8 @@
 .yarn/install-state.gz
 
 server/node_modules
+server/fir-58713-firebase-adminsdk-i96m7-62fd59193a.json
+
 
 # testing
 /coverage
