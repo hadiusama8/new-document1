@@ -1,15 +1,15 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Share } from "./share-button";
 import Menu from "./menu";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
 import Quill from "quill";
-import { io } from "socket.io-client";
-import { useEffect, useState } from "react";
-import { FaUndo, FaRedo } from "react-icons/fa";
-import { FaEllipsisV } from "react-icons/fa";
+import { io, Socket } from "socket.io-client";
 import {
+  FaUndo,
+  FaRedo,
+  FaEllipsisV,
   FaLink,
   FaAlignCenter,
   FaAlignLeft,
@@ -19,34 +19,83 @@ import {
   FaListUl,
   FaImage,
   FaFilm,
+  FaCut,
+  FaCopy,
+  FaPaste,
+  FaBold,
+  FaItalic,
+  FaUnderline,
+  FaFont,
+  FaPalette,
+  FaListUl as FaBulletList,
+  FaListOl as FaNumberList,
+  FaAlignLeft as FaTextLeft,
+  FaAlignCenter as FaTextCenter,
+  FaAlignRight as FaTextRight,
+  FaAlignJustify as FaTextJustify,
+  FaStrikethrough,
 } from "react-icons/fa";
 
-export default function Editor({ documentId }) {
-  const [socket, setSocket] = React.useState();
-  const [quill, setQuill] = React.useState();
+interface EditorProps {
+  documentId: string;
+}
+
+interface User {
+  userName: string;
+  name: string;
+}
+
+interface ContextMenuState {
+  visible: boolean;
+  x: number;
+  y: number;
+}
+
+interface ContextMenuItem {
+  label: string;
+  action: string;
+  icon?: React.ReactNode;
+  divider?: boolean;
+  color?: string;
+}
+
+export default function Editor({ documentId }: EditorProps) {
+  const [socket, setSocket] = useState<Socket>();
+  const [quill, setQuill] = useState<Quill>();
 
   const fontSizeArr = [
-    "8px",
-    "9px",
-    "10px",
-    "12px",
-    "14px",
-    "16px",
-    "20px",
-    "24px",
-    "32px",
-    "42px",
-    "54px",
-    "68px",
-    "84px",
-    "98px",
+    "8px", "9px", "10px", "12px", "14px", "16px", "20px",
+    "24px", "32px", "42px", "54px", "68px", "84px", "98px"
+  ];
+
+  const colorOptions = [
+    "#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00",
+    "#FF00FF", "#00FFFF", "#808080", "#800000", "#808000"
+  ];
+
+  const contextMenuItems: ContextMenuItem[] = [
+    { label: "Cut", action: "cut", icon: <FaCut className="w-4 h-4" /> },
+    { label: "Copy", action: "copy", icon: <FaCopy className="w-4 h-4" /> },
+    { label: "Paste", action: "paste", icon: <FaPaste className="w-4 h-4" /> },
+    { label: "Select All", action: "selectAll", divider: true },
+    { label: "Bold", action: "bold", icon: <FaBold className="w-4 h-4" /> },
+    { label: "Italic", action: "italic", icon: <FaItalic className="w-4 h-4" /> },
+    { label: "Underline", action: "underline", icon: <FaUnderline className="w-4 h-4" />, divider: true },
+    { label: "Strike Through", action: "strike", icon: <FaStrikethrough className="w-4 h-4" />, divider: true },
+    { label: "Align Left", action: "alignLeft", icon: <FaTextLeft className="w-4 h-4" /> },
+    { label: "Center", action: "alignCenter", icon: <FaTextCenter className="w-4 h-4" /> },
+    { label: "Align Right", action: "alignRight", icon: <FaTextRight className="w-4 h-4" /> },
+    { label: "Justify", action: "alignJustify", icon: <FaTextJustify className="w-4 h-4" />, divider: true },
+    { label: "Bullet List", action: "bulletList", icon: <FaBulletList className="w-4 h-4" /> },
+    { label: "Number List", action: "numberList", icon: <FaNumberList className="w-4 h-4" /> },
   ];
 
   const modules = {
     toolbar: "#toolbar",
   };
 
-  const Size = Quill.import("attributors/style/size");
+  // Register font size options
+  const Size = Quill.import("attributors/style/size") as any;
   Size.whitelist = fontSizeArr;
   Quill.register(Size, true);
 
@@ -56,10 +105,15 @@ export default function Editor({ documentId }) {
   });
 
   const [userName, setUserName] = useState("");
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [isJoined, setIsJoined] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [isSliderVisible, setIsSliderVisible] = useState(false);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isExtraOpen, setIsExtraOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (quillInstance) {
       quillInstance?.disable();
       quillInstance?.setText("Loading...");
@@ -74,13 +128,13 @@ export default function Editor({ documentId }) {
     };
   }, [quillInstance]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (quill && socket) {
-      const handleTextChange = (delta, oldDelta, source) => {
+      const handleTextChange = (delta: any, oldDelta: any, source: string) => {
         if (source === "user") {
-          const content = quill.getContents(); // Get the full content
-          socket.emit("send-changes", delta, content); // Send the full content to the server
-          socket.emit("db-changes", content); // save to db
+          const content = quill.getContents();
+          socket.emit("send-changes", delta, content);
+          socket.emit("db-changes", content);
         }
       };
 
@@ -91,9 +145,9 @@ export default function Editor({ documentId }) {
     }
   }, [quill, socket]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (quill && socket) {
-      const handleTextChange = (delta) => {
+      const handleTextChange = (delta: any) => {
         quill.updateContents(delta);
       };
 
@@ -104,46 +158,31 @@ export default function Editor({ documentId }) {
     }
   }, [quill, socket]);
 
-  React.useEffect(() => {
-    if (socket == null || quill == null) return;
+  useEffect(() => {
+    if (!socket || !quill) return;
 
-    // Prompt user for their name when they join
     const name = prompt("Enter your name to join the document:");
-
     if (name) {
       setUserName(name);
-
-      // Emit the event to join the document with the user's name and documentId
       socket.emit("get-document", documentId, name);
     }
 
-    // Listen for the user list updates from the server
-    socket.on("user-list", (users) => {
-      setUsers(users); // Update the state with the list of users
+    socket.on("user-list", (users: User[]) => {
+      setUsers(users);
     });
 
-    // Listen for the loaded document content from the server
-    socket.once("load-document", (document) => {
+    socket.once("load-document", (document: any) => {
       quill.setContents(document);
       quill.enable();
     });
 
-    // Emit the initial request to join and load the document only if name is provided
-    // if (name) {
-    //   socket.emit("get-document", documentId);
-    // }
-
-    // Clean up the event listeners when the component unmounts
     return () => {
       socket.off("user-list");
       socket.off("load-document");
     };
   }, [socket, quill, documentId]);
 
-  const [zoomLevel, setZoomLevel] = React.useState(100);
-  const [isSliderVisible, setIsSliderVisible] = React.useState(false);
-
-  const handleZoomChange = (event) => {
+  const handleZoomChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(event.target.value);
     setZoomLevel(value);
   };
@@ -152,7 +191,7 @@ export default function Editor({ documentId }) {
     setIsSliderVisible((prev) => !prev);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (quill) {
       const editorContent = quill.root;
       const scale = zoomLevel / 100;
@@ -164,19 +203,12 @@ export default function Editor({ documentId }) {
   const dynamicWidth = 800 * (zoomLevel / 100);
   const dynamicHeight = 1000 * (zoomLevel / 100);
 
-  const [isModalVisible, setModalVisible] = React.useState(false);
-  const [email, setEmail] = React.useState("");
-
-  // Function to handle opening/closing the modal
   const handleShareClick = () => {
-    setModalVisible(!isModalVisible); // Toggle the modal visibility
+    setModalVisible(!isModalVisible);
   };
 
-  // Function to copy the current URL to the clipboard
   const handleCopyLink = () => {
-    const currentUrl = window.location.href; // Get current page URL
-
-    // Copy the URL to the clipboard using the Clipboard API
+    const currentUrl = window.location.href;
     navigator.clipboard
       .writeText(currentUrl)
       .then(() => {
@@ -187,12 +219,10 @@ export default function Editor({ documentId }) {
       });
   };
 
-  // Function to handle email input changes
-  const handleEmailChange = (e) => {
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
   };
 
-  // Function to handle inviting via email (could be extended for backend integration)
   const handleInvite = () => {
     alert(`Invitation sent to ${email}`);
   };
@@ -205,42 +235,108 @@ export default function Editor({ documentId }) {
     "ele-icon.png",
     "panda-icon.webp",
     "pig-icon.webp",
-    // Add more images as needed
   ];
 
-  // Function to get a random image
   const getRandomImage = () => {
     const randomIndex = Math.floor(Math.random() * images.length);
-    console.log(images[randomIndex]);
     return images[randomIndex];
   };
 
-  const [isExtraOpen, setIsExtraOpen] = React.useState(false);
   const extraDropdown = () => {
-    console.log("dropdown clicked");
     setIsExtraOpen(!isExtraOpen);
   };
 
+  // Context menu functionality
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    x: 0,
+    y: 0
+  });
+
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu({
+      ...contextMenu,
+      visible: false
+    });
+  };
+
+  const handleContextMenuAction = (action: string) => {
+    if (!quill) return;
+    
+    switch(action) {
+      case 'cut':
+        document.execCommand('cut');
+        break;
+      case 'copy':
+        document.execCommand('copy');
+        break;
+      case 'paste':
+        document.execCommand('paste');
+        break;
+      case 'selectAll':
+        quill.setSelection(0, quill.getLength());
+        break;
+      case 'bold':
+        quill.format('bold', !quill.getFormat().bold);
+        break;
+      case 'italic':
+        quill.format('italic', !quill.getFormat().italic);
+        break;
+      case 'underline':
+        quill.format('underline', !quill.getFormat().underline);
+        break;
+      case 'strike':
+        quill.format('strike', !quill.getFormat().strike);
+        break;
+      case 'alignLeft':
+        quill.format('align', 'left');
+        break;
+      case 'alignCenter':
+        quill.format('align', 'center');
+        break;
+      case 'alignRight':
+        quill.format('align', 'right');
+        break;
+      case 'alignJustify':
+        quill.format('align', 'justify');
+        break;
+      case 'bulletList':
+        quill.format('list', 'bullet');
+        break;
+      case 'numberList':
+        quill.format('list', 'ordered');
+        break;
+    }
+    handleCloseContextMenu();
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        handleCloseContextMenu();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenu.visible]);
+
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center mt-8">
-      {/* <h2>Users in this document:</h2> */}
-
-      {/* <div className="flex flex-wrap">
-  {users.map((user, index) => (
-    <div key={index} className="flex items-center mr-4 mb-4">
-      <img
-        src={`/images/${getRandomImage()}`} // Use the relative path to the images
-        alt={user.name}
-        className="user-image w-10 h-8 rounded-full mr-2"
-      />
-      <span className="user-name text-xl">{user.userName}</span>
-    </div>
-  ))}
-</div> */}
-
       <div
         id="mainTool"
-        className=" w-full sm:flex sm:flex-row sm:flex-wrap flex flex-col flex-wrap items-center justify-between sm:items-center sm:justify-between mb-8 "
+        className="w-full sm:flex sm:flex-row sm:flex-wrap flex flex-col flex-wrap items-center justify-between sm:items-center sm:justify-between mb-8"
       >
         <div id="menu" className="sm:ml-8">
           <Menu quill={quill} />
@@ -269,20 +365,18 @@ export default function Editor({ documentId }) {
             </div>
           )}
           <div id="toolbar-header-font">
-              <select id="toolbar-header"
-              className="ql-header">
-                <option value="">Normal</option>
-                <option value="1">Heading 1</option>
-                <option value="2">Heading 2</option>
-              </select>
+            <select id="toolbar-header" className="ql-header">
+              <option value="">Normal</option>
+              <option value="1">Heading 1</option>
+              <option value="2">Heading 2</option>
+            </select>
 
-              <select className="ql-font">
-                <option value="sans-serif">Sans Serif</option>
-                <option value="serif">Serif</option>
-                <option value="monospace">Monospace</option>
-              </select>
+            <select className="ql-font">
+              <option value="sans-serif">Sans Serif</option>
+              <option value="serif">Serif</option>
+              <option value="monospace">Monospace</option>
+            </select>
           </div>
-         
 
           <select className="ql-color">
             <option value="#000000">Black</option>
@@ -291,6 +385,7 @@ export default function Editor({ documentId }) {
           <button className="ql-bold"></button>
           <button className="ql-italic"></button>
           <button className="ql-underline"></button>
+          <button className="ql-strike"></button>
 
           <div>
             <select className="ql-size">
@@ -317,8 +412,6 @@ export default function Editor({ documentId }) {
           </div>
 
           <div id="extra-dropdown" className="relative">
-            {" "}
-            {/* Make parent relative */}
             <button
               className="ml-2 text-sm"
               id="wrap-extra-icon"
@@ -327,80 +420,28 @@ export default function Editor({ documentId }) {
               <FaEllipsisV />
             </button>
             {isExtraOpen && (
-  <div  className="absolute h-auto w-[50px] left-5 top-[40px] bg-white shadow-lg border border-gray-300 rounded-lg z-30 text-black text-sm">
-    <ul className="py-2 flex flex-col">
-      <li>
-        <button id="editor"  className="ql-link">
-         
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-align" value="center">
-         
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-align" value="left">
-         
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-align" value="right">
-          
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-list" value="ordered">
-          
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-list" value="bullet">
-          
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-image">
-         
-        </button>
-      </li>
-
-      <li>
-        <button className="ql-video">
-         
-        </button>
-      </li>
-    </ul>
-  </div>
-)}
-
+              <div className="absolute h-auto w-[50px] left-5 top-[40px] bg-white shadow-lg border border-gray-300 rounded-lg z-30 text-black text-sm">
+                <ul className="py-2 flex flex-col">
+                  <li><button className="ql-link"></button></li>
+                  <li><button className="ql-align" value="center"></button></li>
+                  <li><button className="ql-align" value="left"></button></li>
+                  <li><button className="ql-align" value="right"></button></li>
+                  <li><button className="ql-list" value="ordered"></button></li>
+                  <li><button className="ql-list" value="bullet"></button></li>
+                  <li><button className="ql-image"></button></li>
+                  <li><button className="ql-video"></button></li>
+                </ul>
+              </div>
+            )}
           </div>
-
-          {/* Mobile menu dropdown */}
-         
-        
         </div>
 
-        
-
-        {/* <div className='w-[800px] shadow-lg rounded-lg'>hello</div> */}
-
-        <div id="share" onClick={handleShareClick} className="sm:mr-8 ">
+        <div id="share" onClick={handleShareClick} className="sm:mr-8">
           <Share />
-
-          {/* Modal (Popup) */}
           {isModalVisible && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white p-8 rounded-lg shadow-lg w-[300px] sm:w-[400px] flex flex-col items-center space-y-4">
                 <h2 className="text-lg font-semibold">Invite via Email</h2>
-
-                {/* Email Input */}
                 <input
                   type="email"
                   placeholder="Enter email"
@@ -408,25 +449,19 @@ export default function Editor({ documentId }) {
                   onChange={handleEmailChange}
                   className="border border-gray-300 p-2 rounded w-full"
                 />
-
                 <button
                   onClick={handleInvite}
                   className="bg-blue-500 text-white w-full py-2 rounded-lg mt-2"
                 >
                   Send Invite
                 </button>
-
                 <hr className="w-full border-gray-200" />
-
-                {/* Copy Link Button */}
                 <button
                   onClick={handleCopyLink}
                   className="bg-green-500 text-white w-full py-2 rounded-lg"
                 >
                   Copy Link
                 </button>
-
-                {/* Close Button */}
                 <button
                   onClick={handleShareClick}
                   className="text-red-500 w-full py-2 rounded-lg mt-2"
@@ -438,41 +473,63 @@ export default function Editor({ documentId }) {
           )}
         </div>
       </div>
+
       <footer>
-  <div
-    id="footer-menu"
-    className="h-[50px] flex flex-wrap justify-between shadow-lg rounded-lg"
-  >
-    <div id="editor" className="flex ">
-      <select id="toolbar-header" className="ql-header m-4">
-        <option value="">Normal</option>
-        <option value="1">Heading 1</option>
-        <option value="2">Heading 2</option>
-      </select>
-
-      <select className="ql-font m-4">
-        <option value="sans-serif">Sans Serif</option>
-        <option value="serif">Serif</option>
-        <option value="monospace">Monospace</option>
-      </select>
-    </div>
-
-    {/* Other buttons can be added here */}
-  </div>
-</footer>
+        <div
+          id="footer-menu"
+          className="h-[50px] flex flex-wrap justify-between shadow-lg rounded-lg"
+        >
+          <div id="editor" className="flex">
+            <select id="toolbar-header" className="ql-header m-4">
+              <option value="">Normal</option>
+              <option value="1">Heading 1</option>
+              <option value="2">Heading 2</option>
+            </select>
+            <select className="ql-font m-4">
+              <option value="sans-serif">Sans Serif</option>
+              <option value="serif">Serif</option>
+              <option value="monospace">Monospace</option>
+            </select>
+          </div>
+        </div>
+      </footer>
 
       <div
         id="editor-div"
-        className="relative px-20 pt-20 bg-white text-black overflow-scroll"
+        className="relative w-[90%] bg-white text-black overflow-scroll px-8 pt-8"
         ref={quillRef}
+        onContextMenu={handleContextMenu}
         style={{
-          maxWidth: "100%",
-          width: `${dynamicWidth}px`,
           height: `${dynamicHeight}px`,
           marginLeft: "auto",
           marginRight: "auto",
         }}
-      ></div>
+      >
+        {contextMenu.visible && (
+          <div
+            className="fixed bg-white shadow-lg border border-gray-200 rounded-lg py-2 z-50 min-w-[200px]"
+            style={{
+              left: `${contextMenu.x}px`,
+              top: `${contextMenu.y}px`,
+            }}
+          >
+            {contextMenuItems.map((item, index) => (
+              <React.Fragment key={index}>
+                <button
+                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                  onClick={() => handleContextMenuAction(item.action)}
+                >
+                  {item.icon}
+                  <span className={item.color ? `text-${item.color}` : ''}>
+                    {item.label}
+                  </span>
+                </button>
+                {item.divider && <hr className="my-1 border-gray-200" />}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
