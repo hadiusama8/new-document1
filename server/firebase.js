@@ -2,12 +2,12 @@
 const admin = require('firebase-admin');
 
 // Load the service account key JSON file
-const serviceAccount = require('./fir-58713-firebase-adminsdk-i96m7-62fd59193a.json');
+const serviceAccount = require('./new-document-d5be0-firebase-adminsdk-fbsvc-456cf9adb0.json');
 
 // Initialize Firebase Admin
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://fir-58713.firebaseio.com", // Use Realtime Database or Firestore
+  databaseURL: "https://new-document-d5be0.firebaseio.com", // Use Realtime Database or Firestore
 });
 
 // Export admin instance for use in other files
