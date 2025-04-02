@@ -87,11 +87,52 @@ export default function Editor({ documentId }: EditorProps) {
     { label: "Align Right", action: "alignRight", icon: <FaTextRight className="w-4 h-4" /> },
     { label: "Justify", action: "alignJustify", icon: <FaTextJustify className="w-4 h-4" />, divider: true },
     { label: "Bullet List", action: "bulletList", icon: <FaBulletList className="w-4 h-4" /> },
-    { label: "Number List", action: "numberList", icon: <FaNumberList className="w-4 h-4" /> },
+    { label: "Number List", action: "numberList", icon: <FaNumberList className="w-4 h-4" />, divider: true },
+    { label: "Insert Image", action: "image", icon: <FaImage className="w-4 h-4" /> },
+    { label: "Upload Image", action: "uploadImage", icon: <FaImage className="w-4 h-4" /> },
+    { label: "Insert Video", action: "video", icon: <FaFilm className="w-4 h-4" /> },
+    { label: "Upload Video", action: "uploadVideo", icon: <FaFilm className="w-4 h-4" /> },
   ];
 
   const modules = {
-    toolbar: "#toolbar",
+    toolbar: {
+      container: "#toolbar",
+      handlers: {
+        image: function() {
+          const input = document.createElement('input');
+          input.setAttribute('type', 'file');
+          input.setAttribute('accept', 'image/*');
+          input.click();
+
+          input.onchange = () => {
+            const file = input.files?.[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const range = this.quill.getSelection(true);
+                this.quill.insertEmbed(range.index, 'image', e.target?.result);
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+        },
+        video: function() {
+          const input = document.createElement('input');
+          input.setAttribute('type', 'file');
+          input.setAttribute('accept', 'video/*');
+          input.click();
+
+          input.onchange = () => {
+            const file = input.files?.[0];
+            if (file) {
+              const videoUrl = URL.createObjectURL(file);
+              const range = this.quill.getSelection(true);
+              this.quill.insertEmbed(range.index, 'video', videoUrl);
+            }
+          };
+        }
+      }
+    }
   };
 
   // Register font size options
@@ -269,6 +310,30 @@ export default function Editor({ documentId }: EditorProps) {
     });
   };
 
+  const handleImageUpload = (file: File) => {
+    if (!quill) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'image', e.target?.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoUpload = (file: File) => {
+    if (!quill) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const range = quill.getSelection(true);
+        // Create a video blob URL
+        const videoUrl = URL.createObjectURL(file);
+        quill.insertEmbed(range.index, 'video', videoUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleContextMenuAction = (action: string) => {
     if (!quill) return;
     
@@ -315,6 +380,48 @@ export default function Editor({ documentId }: EditorProps) {
       case 'numberList':
         quill.format('list', 'ordered');
         break;
+      case 'image':
+        const imageUrl = prompt('Enter image URL:');
+        if (imageUrl) {
+          quill.focus();
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', imageUrl);
+        }
+        break;
+      case 'video':
+        const videoUrl = prompt('Enter video URL:');
+        if (videoUrl) {
+          quill.focus();
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'video', videoUrl);
+        }
+        break;
+      case 'uploadImage': {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                handleImageUpload(file);
+            }
+        };
+        input.click();
+        break;
+      }
+      case 'uploadVideo': {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                handleVideoUpload(file);
+            }
+        };
+        input.click();
+        break;
+      }
     }
     handleCloseContextMenu();
   };
@@ -507,26 +614,28 @@ export default function Editor({ documentId }: EditorProps) {
       >
         {contextMenu.visible && (
           <div
-            className="fixed bg-white shadow-lg border border-gray-200 rounded-lg py-2 z-50 min-w-[200px]"
+            className="fixed bg-white shadow-lg border border-gray-200 rounded-lg z-50 min-w-[200px] max-h-[400px] flex flex-col"
             style={{
               left: `${contextMenu.x}px`,
               top: `${contextMenu.y}px`,
             }}
           >
-            {contextMenuItems.map((item, index) => (
-              <React.Fragment key={index}>
-                <button
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-                  onClick={() => handleContextMenuAction(item.action)}
-                >
-                  {item.icon}
-                  <span className={item.color ? `text-${item.color}` : ''}>
-                    {item.label}
-                  </span>
-                </button>
-                {item.divider && <hr className="my-1 border-gray-200" />}
-              </React.Fragment>
-            ))}
+            <div className="py-2 overflow-y-auto">
+              {contextMenuItems.map((item, index) => (
+                <React.Fragment key={index}>
+                  <button
+                    className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 whitespace-nowrap"
+                    onClick={() => handleContextMenuAction(item.action)}
+                  >
+                    {item.icon}
+                    <span className={item.color ? `text-${item.color}` : ''}>
+                      {item.label}
+                    </span>
+                  </button>
+                  {item.divider && <hr className="my-1 border-gray-200" />}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         )}
       </div>
