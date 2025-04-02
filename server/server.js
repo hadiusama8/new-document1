@@ -1,9 +1,19 @@
 //const { db } = require('./firebase'); // Firebase Firestore instance
 const QuillDelta = require('quill-delta');
+require('dotenv').config();
 const admin = require("./firebase");
 const db = admin.firestore();
 
-db.collection("sanika-demo")
+// Debug: Check if environment variables are loaded
+console.log('Environment Variables Check:', {
+  FIREBASE_TYPE: process.env.FIREBASE_TYPE,
+  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+  FIREBASE_PRIVATE_KEY_ID: process.env.FIREBASE_PRIVATE_KEY_ID,
+  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+  FIREBASE_COLLECTION: process.env.FIREBASE_COLLECTION
+});
+
+db.collection(process.env.FIREBASE_COLLECTION)
   .get()
   .then((snapshot) => {
     console.log(
@@ -45,7 +55,7 @@ io.on("connection", (socket) => {
 
     // Load document data from Firestore
     try {
-      const docRef = db.collection("sanika-demo").doc(documentId);
+      const docRef = db.collection(process.env.FIREBASE_COLLECTION).doc(documentId);
       const doc = await docRef.get();
 
       let documentData = "";
@@ -72,7 +82,7 @@ io.on("connection", (socket) => {
     //Db saving
     socket.on("db-changes", async(content) => {
         try {
-            const docRef = db.collection("sanika-demo").doc(documentId);
+            const docRef = db.collection(process.env.FIREBASE_COLLECTION).doc(documentId);
     //         const doc = await docRef.get(); // Retrieve the current document
     
     //         let currentContent = doc.data().content;
